@@ -233,14 +233,79 @@ Therefore, \begin{equation} arg_{X_t} max P(X_t | Z^T) = \{1,2,1\}\end{equation}
 
 # Question 3c
 
+First we solve for the $\delta_0(i), i \in \{1,2,3\}$:
+
+$$ \delta_0(1) = P(Z_0 = 2 | X_0 = 1)P(X_0 = 1) = 0.1 \times (1/3) $$
+$$ \delta_0(2) = P(Z_0 = 2 | X_0 = 2)P(X_0 = 2) = 0.7 \times (1/3) $$
+$$ \delta_0(3) = P(Z_0 = 2 | X_0 = 3)P(X_0 = 3) = 0.3 \times (1/3) $$
+
+We then evaluate $\delta_1(i), i \in \{1,2,3\}$:
+\begin{equation}
+\begin{aligned}
+\delta_1(1) &= P(Z_1 = 3 | X_1 = 1) argmax (priors),
+\\& priors = \{ P(X_1 = 1 | X_0 = 1) \delta_0(1) = (0.2)(\delta_0(1)),
+\\& P(X_1 = 1 | X_0 = 2) \delta_0(2) = (0.2)(\delta_0(2)),
+\\& P(X_1 = 1 | X_0 = 3) \delta_0(3) = (0.4)(\delta_0(3)) \}
+\end{aligned}
+\end{equation}
+
+\begin{equation}
+\begin{aligned}
+\delta_1(2) &= P(Z_1 = 3 | X_1 = 2) argmax (priors),
+\\& priors = \{ P(X_1 = 2 | X_0 = 1) \delta_0(1) = (0.3)(\delta_0(1)),
+\\& P(X_1 = 2 | X_0 = 2) \delta_0(2) = (0.7)(\delta_0(2)),
+\\& P(X_1 = 2 | X_0 = 3) \delta_0(3) = (0.2)(\delta_0(3)) \}
+\end{aligned}
+\end{equation}
+
+\begin{equation}
+\begin{aligned}
+\delta_1(3) &= P(Z_1 = 3 | X_1 = 3) argmax (priors),
+\\& priors = \{ P(X_1 = 3 | X_0 = 1) \delta_0(1) = (0.5)(\delta_0(1)),
+\\& P(X_1 = 3 | X_0 = 2) \delta_0(2) = (0.1)(\delta_0(2)),
+\\& P(X_1 = 3 | X_0 = 3) \delta_0(3) = (0.4)(\delta_0(3)) \}
+\end{aligned}
+\end{equation}
+
+Next, we repeat this procedure for time step 2:
+
+\begin{equation}
+\begin{aligned}
+\delta_2(1) &= P(Z_2 = 1 | X_1 = 1) argmax (priors),
+\\& priors = \{ P(X_1 = 1 | X_0 = 1) \delta_1(1) = (0.2)(\delta_1(1)),
+\\& P(X_1 = 1 | X_0 = 2) \delta_1(2) = (0.2)(\delta_1(2)),
+\\& P(X_1 = 1 | X_0 = 3) \delta_1(3) = (0.4)(\delta_1(3)) \}
+\end{aligned}
+\end{equation}
+
+\begin{equation}
+\begin{aligned}
+\delta_2(2) &= P(Z_2 = 1 | X_1 = 2) argmax (priors),
+\\& priors = \{ P(X_1 = 2 | X_0 = 1) \delta_1(1) = (0.2)(\delta_1(1)),
+\\& P(X_1 = 2 | X_0 = 2) \delta_1(2) = (0.7)(\delta_1(2)),
+\\& P(X_1 = 2 | X_0 = 3) \delta_1(3) = (0.2)(\delta_1(3)) \}
+\end{aligned}
+\end{equation}
+
+\begin{equation}
+\begin{aligned}
+\delta_2(3) &= P(Z_2 = 1 | X_1 = 3) argmax (priors),
+\\& priors = \{ P(X_1 = 3 | X_0 = 1) \delta_1(1) = (0.5)(\delta_1(1)),
+\\& P(X_1 = 3 | X_0 = 2) \delta_1(2) = (0.1)(\delta_1(2)),
+\\& P(X_1 = 3 | X_0 = 3) \delta_1(3) = (0.4)(\delta_1(3)) \}
+\end{aligned}
+\end{equation}
+
+
+The MAP sequence we obtain is $\{X_0 = 3, X_1 = 3,X_2 = 1\}$. This compares to the filtering sequence $\{X_0 = 2, X_1 = 3,X_2 = 1\}$ and the smoothing sequence $\{X_0 = 1, X_1 = 2,X_2 = 1\}$.
 
 
 
 # Question 5a
 
-I worked briefly (30 mins) with Joe Denby and Ben Pick.
+I worked briefly (1 hour - 30 min) with Joe Denby and Ben Pick. 
 
 
 # Question 5b
 
-12 as of 9pm friday
+13 as of 2pm saturday
