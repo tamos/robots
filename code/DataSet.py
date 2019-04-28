@@ -45,8 +45,6 @@ class DataSet(object):
                 idx+=1
 
 
-
-
     # This function reads in the file and populates the training state
     # and output sequences
     def read_file(self):
@@ -61,14 +59,19 @@ class DataSet(object):
             for each_obs in f:
                 if each_obs != ".\n": # if its not the end of the walk
                     x,y,state = each_obs.split(",")
-                    coords_tmp.append((x,y))
-                    state_tmp.append(state)
+                    coords_tmp.append(self.xyToInt[int(x) - 1][int(y) - 1])
+                    state_tmp.append(self.obsToInt[state.strip("\n")])
                 else:
                     all_state_seq.append(coords_tmp) # add the walk
                     all_obs_seq.append(state_tmp)
                     coords_tmp = [] # refresh temporary containers
                     state_tmp = []
-            coords_tmp.append((x,y)) # add on the final walk before finishing
-            state_tmp.append(state)
+            if len(coords_tmp) > 0:
+                all_state_seq.append(coords_tmp) # add the walk
+                all_obs_seq.append(state_tmp)
             print "Done Loading Training Data"
-            return iter(coords_tmp), iter(state_tmp)
+            return all_state_seq, all_obs_seq
+
+        @property
+        def num_outputs(self):
+            return len(self.obsToInt.keys())
