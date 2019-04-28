@@ -190,7 +190,7 @@ Where  \begin{equation}  \NG_2 = 3.84615 \end{equation}
 
 Where $$ \NG_2 = 2.86369 $$
 
-From these we calculate  $ P(Z^{T})$ as
+From these we calculate  $$ P(Z^{T})$$
 
 $$ P(Z^{T}) = \sum_{X_T} \alpha(X_T) \beta(X_T) = \sum_{X_T} \alpha(X_T) $$
 
@@ -303,7 +303,7 @@ The MAP sequence we obtain is $\{X_0 = 3, X_1 = 3,X_2 = 1\}$. This compares to t
 
 # Question 5a
 
-I worked briefly (1 hour - 30 min) with Joe Denby and Ben Pick. 
+I worked briefly (1 hour - 30 min) with Joe Denby and Ben Pick.
 
 
 # Question 5b

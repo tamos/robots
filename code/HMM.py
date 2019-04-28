@@ -15,7 +15,7 @@ class HMM(object):
     def __init__(self, numStates, numOutputs, states, outputs):
         self.numStates = numStates
         self.numOutputs = numOutputs
-        self.states = states
+        self.states = states # tuples of shape
         self.outputs = outputs
 
 
