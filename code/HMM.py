@@ -76,8 +76,10 @@ class HMM(object):
 
     def train_single_sequence(self, output):
 
-        alphas = self._train_alpha(output)
-        betas = self._train_beta(output)
+        alphas, normalizers = self._train_alpha(output)
+        betas = self._train_beta(output, normalizers)
+
+        likeli = normalizers.sum() * -1.0
 
         gamma = np.zeros((self.num_states, self.sequence_length))
         xi = np.zeros((self.num_states, self.num_states, self.sequence_length))
@@ -106,58 +108,43 @@ class HMM(object):
                 xi[i][j][t] = alpha_ti * a_ij * beta_tplusonej * b_jyplusone
 
         xi /= xi.sum(axis=2)[:,:,np.newaxis] + ARBITRARY_OFFSET
+        return gamma, xi, likeli
 
-        likeli = alphas[np.random.randint(0,self.sequence_length - 1),:].sum()
-        return gamma, xi, np.log(likeli)
-
-    def _train_beta(self, outputs):
+    def _train_beta(self, outputs, normalizers):
         betas = np.zeros((self.sequence_length,self.num_states))
         # base case
-        for each_state in range(self.num_states):
-            betas[-1][each_state] = 1.0
+        betas[-1,:] = normalizers[-1]
 
-        denom = betas[-1][:].sum()
-        betas[-1][:] /= float(denom + ARBITRARY_OFFSET)
-
+        # recursive case
         # iterate backwards over sequences
         rev_idx = list(range(self.sequence_length - 1))
         rev_idx.reverse()
         for each_step in rev_idx:
-            for each_state in range(self.num_states):
-                rv = 0.0
-                for each_inner_state in range(self.num_states):
-                    rv_tmp =  float(betas[each_step + 1][each_inner_state])
-                    next_obs = outputs[each_step + 1]
-                    rv_tmp *= float(self.measure_p[next_obs][each_inner_state])
-                    rv_tmp *= float(self.transition_p[each_state][each_inner_state])
-                    rv += rv_tmp
-                betas[each_step][each_state] = rv
-            denom = betas[each_step][:].sum()
-            betas[each_step][:] /= float(denom + ARBITRARY_OFFSET)
-        return betas
+            previous_obs = outputs[each_step + 1]
+            this_obs = outputs[each_step]
+            rv = (self.transition_p * self.measure_p[previous_obs] * betas[each_step + 1,:]).sum()
+            betas[each_step,:] = rv
+        return betas * normalizers
 
 
     def _train_alpha(self, outputs):
-        alphas = np.zeros((self.sequence_length,self.num_states))
-        for each_state in range(self.num_states):
-            # calculate prob of each state given observation at time 0
-            first_obs = outputs[0] # first observation
-            rv = float(self.start_p[each_state]) * float(self.measure_p[first_obs][each_state])
-            alphas[0][each_state] = rv
-        # normalize
-        denom = alphas[0][:].sum()
-        alphas[0][:] /=  float(denom + ARBITRARY_OFFSET)
+        alphas = np.zeros((self.sequence_length, self.num_states))
+        normalization_c = np.zeros((self.sequence_length,1))
 
-        for each_step in range(1,self.sequence_length):
-            for each_state in range(self.num_states):
-                rv = 0.0
-                for each_inner_state in range(self.num_states):
-                    rv_tmp = alphas[ each_step -  1][each_inner_state]
-                    rv_tmp *= float(self.transition_p[each_state][each_inner_state])
-                    rv += rv_tmp
-                next_obs = outputs[each_step]
-                rv *= self.measure_p[next_obs][each_state]
-                alphas[each_step][each_state] = rv
-            denom = alphas[each_step][:].sum()
-            alphas[each_step][:] /= float(denom + ARBITRARY_OFFSET)
-        return alphas
+        # base case
+        first_obs = outputs[0] # first observation
+        alphas[0,:] = (self.start_p * self.measure_p[first_obs,:].reshape(self.start_p.shape)).reshape(alphas[0,:].shape)
+        normalization_c[0] = 1.0 / alphas[0,:].sum()
+        alphas[0,:] = alphas[0,:] * normalization_c[0]
+
+        # recursive case
+
+        for each_step in range(self.sequence_length - 1):
+            next_obs = outputs[each_step + 1]
+            this_obs = outputs[each_step]
+            rv = (alphas[each_step,:] * self.transition_p).sum()
+            rv *= self.measure_p[next_obs,:]
+            alphas[each_step + 1,:] = rv
+            normalization_c[each_step + 1] = 1.0 / alphas[each_step + 1].sum()
+            alphas[each_step + 1,:] *= normalization_c[each_step + 1]
+        return alphas, normalization_c

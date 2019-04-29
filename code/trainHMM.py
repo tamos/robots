@@ -29,7 +29,7 @@ ACTUAL_COLOURS = { 2: {1: 'g', 3: 'b', 4: 'r'},
                     1: {2: 'r', 3: 'g'},
                     3: {1: 'y', 2: 'g', 3: 'r', 4: 'y'},
                     4: {1: 'b', 2: 'y', 4: 'b'}}
-N_ITER = 1000
+N_ITER = 50
 
 def go(dataset, threshold):
 
@@ -39,7 +39,7 @@ def go(dataset, threshold):
     num_outputs = len(dataset.obsToInt.keys())
 
     measure_p = np.zeros((num_outputs, num_states))
-    start_p = np.zeros((num_states,1))
+    start_p = np.ones((num_states,1)) * 1.0/16.0
     # make the matrix of transition probs
     trans_p = np.identity(num_states)
     trans_p *= INITIAL_STAY_PROB
@@ -49,8 +49,6 @@ def go(dataset, threshold):
         # distribute probs to neighbours
         neighbours = NEIGHBOURS[each_loc[0]][each_loc[1]]
         num_neighbours = float(len(neighbours))
-
-        start_p[int_repres] += 1.0/12.0
 
         # do measurement probs
         int_col_repres = int(dataset.obsToInt[ACTUAL_COLOURS[each_loc[0]][each_loc[1]]])
@@ -81,7 +79,7 @@ def go(dataset, threshold):
 if __name__ == "__main__":
 
     dataset = DataSet(argv[1])
-    loglikes = go(dataset, 1e-20)
+    loglikes = go(dataset, 1e-5)
     with open("llikes.csv", 'w') as f:
         for line in loglikes:
             f.write(str(line) + "\n")
