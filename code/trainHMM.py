@@ -24,37 +24,51 @@ NEIGHBOURS = {1: {2: [(1,3)], 3: [(1,2),(2,3)]},
                     4:[(3,3),(2,4),(4,4)]},
             4: {1: [(3,1),(4,2)], 2: [(4,1),(3,2)], 4: [(3,4)]} }
 
+ACTUAL_COLOURS = { 2: {1: 'g', 3: 'b', 4: 'r'},
+                    1: {2: 'r', 3: 'g'},
+                    3: {1: 'y', 2: 'g', 3: 'r', 4: 'y'},
+                    4: {1: 'b', 2: 'y', 4: 'b'}}
+N_ITER = 100
 
 def go(dataset):
+
+    ### Set up ###
     states, outputs = dataset.read_file()
-    states = states[0]
-    outputs = outputs[0]
     num_states = dataset.xyToInt.ravel().shape[0]
-    tmp_mat = np.identity(num_states + 1)
-    tmp_mat *= INITIAL_STAY_PROB
-    for each_loc in VALID_LOCATIONS:
-        int_repres = int(dataset.xyToInt[each_loc[0] - 1,each_loc[1] - 1])
-        # distribute probs to neighbours
-        neighbours = NEIGHBOURS[each_loc[0]][each_loc[1]]
-        num_neighbours = len(neighbours)
-        for each_neighbour in neighbours:
-            int_repres_neigh = int(dataset.xyToInt[each_neighbour[0] - 1,each_neighbour[1] - 1])
-            tmp_mat[int_repres, int_repres_neigh] += (1 - INITIAL_STAY_PROB) * (1.0/num_neighbours)
     num_outputs = len(dataset.obsToInt.keys())
 
-    # make matrix of remaining probs
+    measure_p = np.zeros((num_outputs, num_states))
+    start_p = np.zeros((num_states,1))
+    # make the matrix of transition probs
+    trans_p = np.identity(num_states)
+    trans_p *= INITIAL_STAY_PROB
+    for each_loc in VALID_LOCATIONS:
+        int_repres = int(dataset.xyToInt[each_loc[0] - 1,each_loc[1] - 1])
 
-    other_probs = (np.ones((num_states, num_states)) * ((1 - CAMERA_ACC_PROB) / 3))
+        # distribute probs to neighbours
+        neighbours = NEIGHBOURS[each_loc[0]][each_loc[1]]
+        num_neighbours = float(len(neighbours))
 
-    # remove diagonals
-    other_probs -= (np.identity(num_states) * ((1 - CAMERA_ACC_PROB) / 3))
-    measure_p = (np.identity(num_states)  * CAMERA_ACC_PROB) + other_probs
+        start_p[int_repres] += 1.0/12.0
 
-    start_p = np.ones((num_states,1)) / num_states
+        # do measurement probs
+        int_col_repres = int(dataset.obsToInt[ACTUAL_COLOURS[each_loc[0]][each_loc[1]]])
+        measure_p[:,int_repres] = TOTAL_CAMERA_ERR_PROB / 3.0
+        measure_p[int_col_repres,int_repres] = CAMERA_ACC_PROB
 
-    model = HMM(num_states, num_outputs, states, outputs, tmp_mat, measure_p, start_p)
-    model.train()
+        for each_neighbour in neighbours:
+            int_repres_neigh = int(dataset.xyToInt[each_neighbour[0] - 1 ,each_neighbour[1] - 1])
+            trans_p[int_repres, int_repres_neigh] += (1.0 - INITIAL_STAY_PROB) * (1.0/num_neighbours)
 
+    ### Model training ###
+
+    for _ in range(N_ITER):
+
+        model = HMM(num_states, num_outputs, outputs, trans_p,  measure_p, start_p)
+        trans_p, measure_p, start_p , ll = model.train()
+        #print trans_p, measure_p, start_p
+        print "Log Likely is ", ll
+    #raise TypeError
 
 
 if __name__ == "__main__":
