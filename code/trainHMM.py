@@ -67,19 +67,25 @@ def go(dataset, threshold):
     for _ in range(N_ITER):
         model = HMM(num_states, num_outputs, outputs, trans_p,  measure_p, start_p)
         trans_p, measure_p, start_p , ll = model.train()
-        print "Log Likely is ", ll, np.exp(ll) * 100
+        print "Log Likely is ", ll, np.exp(ll)
         llikes.append(ll)
-        if abs(ll_old - ll) < threshold:
+        diff = abs(ll_old - ll)
+        print "Difference is", diff
+        if diff < threshold:
             print "Threshold change reached, stopping"
             break
         ll_old = ll
-    return llikes
+    return trans_p, measure_p, start_p, llikes
 
 
 if __name__ == "__main__":
 
     dataset = DataSet(argv[1])
-    loglikes = go(dataset, 1e-5)
+    trans_p, measure_p, start_p, loglikes = go(dataset, 1e-5)
     with open("llikes.csv", 'w') as f:
         for line in loglikes:
             f.write(str(line) + "\n")
+
+    print "\nTRANSITION P\n", trans_p
+    print "\nMEASURE P\n", measure_p
+    print "\nSTART P\n", start_p

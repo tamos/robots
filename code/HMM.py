@@ -65,8 +65,8 @@ class HMM(object):
 
         # last, normalize each summed matrix
         # ref https://stackoverflow.com/questions/8904694/how-to-normalize-a-2-dimensional-numpy-array-in-python-less-verbose
-        new_transition_p /= new_transition_p.sum(axis=1)[:,np.newaxis] + ARBITRARY_OFFSET # row normalize
-        new_measure_p /= new_measure_p.sum(axis = 0)[np.newaxis,:] + ARBITRARY_OFFSET # column normalize
+        new_transition_p /= new_transition_p.sum(axis=1) + ARBITRARY_OFFSET # row normalize
+        new_measure_p /= new_measure_p.sum(axis = 0) + ARBITRARY_OFFSET # column normalize
         new_start_p /= new_start_p.sum()  + ARBITRARY_OFFSET # plain normalize
 
         np.nan_to_num(new_transition_p, copy = False)
@@ -84,16 +84,8 @@ class HMM(object):
         gamma = np.zeros((self.num_states, self.sequence_length))
         xi = np.zeros((self.num_states, self.num_states, self.sequence_length))
 
-        #for each_t in range(self.sequence_length):
-            #for each_state in range(self.num_states):
-            #    a = float(alphas[each_t][each_state])
-            #    b = float(betas[each_t][each_state])
-            #    gamma[each_state][each_t] = a * b
         gamma = (alphas * betas).T
-        gamma /= gamma.sum(axis=1)[:,np.newaxis] + ARBITRARY_OFFSET
-        #for each_t in range(self.sequence_length):
-        #    denom = gamma[:,each_t].sum()
-        #    gamma[:,each_t] /= float(denom + ARBITRARY_OFFSET)
+        gamma /= gamma.sum(axis = 1).reshape(gamma.shape[0],1) + ARBITRARY_OFFSET
 
         for t in range(self.sequence_length):
             for i,j in product(range(self.num_states),range(self.num_states)):
