@@ -6,6 +6,7 @@ from sys import argv
 import numpy as np
 
 
+
 INITIAL_STAY_PROB = 0.2 # probability of staying in current location
 TOTAL_LEAVE_PROB = 1.0 - INITIAL_STAY_PROB # probability of leaving current location
 CAMERA_ACC_PROB = 0.7 # probability of camera being right
@@ -28,9 +29,9 @@ ACTUAL_COLOURS = { 2: {1: 'g', 3: 'b', 4: 'r'},
                     1: {2: 'r', 3: 'g'},
                     3: {1: 'y', 2: 'g', 3: 'r', 4: 'y'},
                     4: {1: 'b', 2: 'y', 4: 'b'}}
-N_ITER = 100
+N_ITER = 1000
 
-def go(dataset):
+def go(dataset, threshold):
 
     ### Set up ###
     states, outputs = dataset.read_file()
@@ -62,16 +63,25 @@ def go(dataset):
 
     ### Model training ###
 
-    for _ in range(N_ITER):
+    llikes = []
+    ll_old = 10e10
 
+    for _ in range(N_ITER):
         model = HMM(num_states, num_outputs, outputs, trans_p,  measure_p, start_p)
         trans_p, measure_p, start_p , ll = model.train()
-        #print trans_p, measure_p, start_p
-        print "Log Likely is ", ll
-    #raise TypeError
+        print "Log Likely is ", ll, np.exp(ll) * 100
+        llikes.append(ll)
+        if abs(ll_old - ll) < threshold:
+            print "Threshold change reached, stopping"
+            break
+        ll_old = ll
+    return llikes
 
 
 if __name__ == "__main__":
 
     dataset = DataSet(argv[1])
-    go(dataset)
+    loglikes = go(dataset, 1e-20)
+    with open("llikes.csv", 'w') as f:
+        for line in loglikes:
+            f.write(str(line) + "\n")

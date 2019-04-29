@@ -2,8 +2,14 @@
 header-includes:
     - \usepackage[vmargin=0.5in,hmargin=0.5in]{geometry}
     - \usepackage{breqn}
-bibliography: paper/MasterBib.bib
 ---
+
+
+# Question 1
+
+
+# Question 2
+
 
 # Question 3a
 
@@ -297,15 +303,21 @@ Next, we repeat this procedure for time step 2:
 \end{equation}
 
 
-The MAP sequence we obtain is $\{X_0 = 3, X_1 = 3,X_2 = 1\}$. This compares to the filtering sequence $\{X_0 = 2, X_1 = 3,X_2 = 1\}$ and the smoothing sequence $\{X_0 = 1, X_1 = 2,X_2 = 1\}$.
+The MAP sequence we obtain from this is $\{X_0 = 3, X_1 = 3,X_2 = 1\}$. This compares to the filtering sequence $\{X_0 = 2, X_1 = 3,X_2 = 1\}$ and the smoothing sequence $\{X_0 = 1, X_1 = 2,X_2 = 1\}$.
 
+# Question 4a
+
+I was not able to complete this question. I have submitted what I was able to produce.
+
+# Question 4b
+
+I was not able to complete this question.
 
 
 # Question 5a
 
 I worked briefly (1 hour - 30 min) with Joe Denby and Ben Pick.
 
-
 # Question 5b
 
-13 as of 2pm saturday
+I spent roughly 29 hours on the problem set from Monday 22 - 29 April.
