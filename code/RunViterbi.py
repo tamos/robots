@@ -37,7 +37,6 @@ class RunViterbi(object):
         for idx in range(len(obs)):
             self.maxSequence.append(viterbi.mostLikelySequence(obs[idx]))
             self.realStates.append(states[idx])
-            print "Sequences done", idx
 
 
 if __name__ == '__main__':
@@ -47,14 +46,17 @@ if __name__ == '__main__':
     viterbi = RunViterbi()
     viterbi.trainHMM(sys.argv[1])
     viterbi.estMaxSequence(sys.argv[2])
-    right = 0
-    wrong = 0
+
+    errors = []
     for i in zip(viterbi.maxSequence, viterbi.realStates):
+        right = 0
+        wrong = 0
         for prediction, reality in zip(i[0],i[1]):
-            print prediction, reality
             if prediction == reality:
                 right += 1
             else:
                 wrong += 1
-    acc = float(right)/float(right + wrong)
-    print "Percent correct: ", acc * 100
+        errors.append((right, wrong))
+        print "Right: " right, " Wrong: ", wrong
+
+    #print errors

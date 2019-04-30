@@ -7,11 +7,11 @@ header-includes:
 
 # Question 1
 
-
-
+I was not able to complete this section.
 
 # Question 2
 
+I was not able to complete this section.
 
 # Question 3a
 
@@ -304,16 +304,15 @@ Next, we repeat this procedure for time step 2:
 \end{aligned}
 \end{equation}
 
-
 The MAP sequence we obtain from this is $\{X_0 = 3, X_1 = 3,X_2 = 1\}$. This compares to the filtering sequence $\{X_0 = 2, X_1 = 3,X_2 = 1\}$ and the smoothing sequence $\{X_0 = 1, X_1 = 2,X_2 = 1\}$.
 
 # Question 4a
 
-See attached files.
+For i, see attached files. My model converges quickly, after 5-10 iterations. For ii, see the included plot.
 
 # Question 4b
 
-See attached files.
+For i, see attached files. For ii, see the output of the my script. My best prediction is 15%.
 
 # Question 5a
 
@@ -321,4 +320,4 @@ I worked briefly (1 hour - 30 min) with Joe Denby and Ben Pick.
 
 # Question 5b
 
-I spent roughly 29 hours on the problem set from Monday 22 - 29 April.
+I spent roughly 25 hours on the problem set from Monday 22 - 29 April.
