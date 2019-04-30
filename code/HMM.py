@@ -2,12 +2,13 @@ import numpy as np
 from itertools import product
 
 
-ARBITRARY_OFFSET = 1e-20
+ARBITRARY_OFFSET = 1e-10
 
 class HMM(object):
     def __init__(self, numStates, numOutputs, outputs, transition_p, measure_p, start_p):
         ''' This is based largely on https://cran.r-project.org/web/packages/seqHMM/vignettes/seqHMM_algorithms.pdf
         where pi = start_p, b = measure_p, and a = transition_p
+        and I reviewed the wikipedia article on Baum-Welch to better understand the algorithm
         '''
         self.num_states = numStates
         self.num_outputs = numOutputs
@@ -48,9 +49,7 @@ class HMM(object):
             for j in range(self.num_states):
                 denom =  probs_given_seq[i][:-1].sum()
                 numer = est_transition_probs[i][j][:-1].sum()
-
-                tmp_val =  float(numer) / float(denom + ARBITRARY_OFFSET)
-                new_transition_p[i][j] = tmp_val
+                new_transition_p[i][j] =  float(numer) / float(denom + ARBITRARY_OFFSET)
 
             # measurement probs
             for each_walk in range(self.num_sequences):
@@ -61,25 +60,28 @@ class HMM(object):
                     numer = relevant_probs[this_walk == z].sum()
                     new_measure_p[each_walk,z,i] = float(numer) / float(denom + ARBITRARY_OFFSET)
 
-        new_measure_p = new_measure_p.sum(axis = 0)
+        new_measure_p = new_measure_p.sum(axis = 0) # get rid of walk axis
 
         # last, normalize each summed matrix
         # ref https://stackoverflow.com/questions/8904694/how-to-normalize-a-2-dimensional-numpy-array-in-python-less-verbose
-        new_transition_p /= new_transition_p.sum(axis=1) + ARBITRARY_OFFSET # row normalize
-        new_measure_p /= new_measure_p.sum(axis = 0) + ARBITRARY_OFFSET # column normalize
+        new_transition_p /= new_transition_p.sum(axis=0) + ARBITRARY_OFFSET # row normalize
+        new_measure_p /= new_measure_p.sum(axis = 1).reshape(new_measure_p.shape[0],1) + ARBITRARY_OFFSET # column normalize
         new_start_p /= new_start_p.sum()  + ARBITRARY_OFFSET # plain normalize
 
         np.nan_to_num(new_transition_p, copy = False)
         np.nan_to_num(new_measure_p, copy = False)
 
-        return new_transition_p, new_measure_p, new_start_p, log_likes.sum()
+        self.transition_p =  new_transition_p
+        self.measure_p = new_measure_p
+        self.start_p = new_start_p
+        return log_likes.sum()
 
     def train_single_sequence(self, output):
 
         alphas, normalizers = self._train_alpha(output)
         betas = self._train_beta(output, normalizers)
 
-        likeli = normalizers.sum() * -1.0
+        likeli = normalizers.sum()
 
         gamma = np.zeros((self.num_states, self.sequence_length))
         xi = np.zeros((self.num_states, self.num_states, self.sequence_length))

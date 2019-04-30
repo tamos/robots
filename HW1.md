@@ -8,6 +8,8 @@ header-includes:
 # Question 1
 
 
+
+
 # Question 2
 
 
@@ -307,12 +309,11 @@ The MAP sequence we obtain from this is $\{X_0 = 3, X_1 = 3,X_2 = 1\}$. This com
 
 # Question 4a
 
-I was not able to complete this question. I have submitted what I was able to produce.
+See attached files.
 
 # Question 4b
 
-I was not able to complete this question.
-
+See attached files.
 
 # Question 5a
 

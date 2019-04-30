@@ -6,12 +6,10 @@ from sys import argv
 import numpy as np
 
 
-
 INITIAL_STAY_PROB = 0.2 # probability of staying in current location
 TOTAL_LEAVE_PROB = 1.0 - INITIAL_STAY_PROB # probability of leaving current location
 CAMERA_ACC_PROB = 0.7 # probability of camera being right
 TOTAL_CAMERA_ERR_PROB = 1.0 - CAMERA_ACC_PROB # probability of camera wrong
-
 
 
 VALID_LOCATIONS = [(2,1), (3,1), (4,1), (1,2), (3,2), (4,2), (1,3), (2,3),
@@ -31,7 +29,7 @@ ACTUAL_COLOURS = { 2: {1: 'g', 3: 'b', 4: 'r'},
                     4: {1: 'b', 2: 'y', 4: 'b'}}
 N_ITER = 50
 
-def go(dataset, threshold):
+def train_model(dataset, threshold):
 
     ### Set up ###
     states, outputs = dataset.read_file()
@@ -64,28 +62,42 @@ def go(dataset, threshold):
     llikes = []
     ll_old = 10e10
 
+    print "\nTRANSITION P\n", trans_p
+    print "\nMEASURE P\n", measure_p
+    print "\nSTART P\n", start_p
+
+
+    asym_cnt = 0
     for _ in range(N_ITER):
         model = HMM(num_states, num_outputs, outputs, trans_p,  measure_p, start_p)
-        trans_p, measure_p, start_p , ll = model.train()
-        print "Log Likely is ", ll, np.exp(ll)
+        ll = model.train()
+        print "Log Likelihood is ", ll
         llikes.append(ll)
+
+        trans_p = model.transition_p
+        measure_p = model.measure_p
+        start_p = model.start_p
+
         diff = abs(ll_old - ll)
         print "Difference is", diff
         if diff < threshold:
-            print "Threshold change reached, stopping"
-            break
+            if asym_cnt >= 5:
+                print "Threshold change reached 5 times, stopping"
+                break
+            else:
+                asym_cnt += 1
         ll_old = ll
-    return trans_p, measure_p, start_p, llikes
+    return model, llikes
 
 
 if __name__ == "__main__":
 
     dataset = DataSet(argv[1])
-    trans_p, measure_p, start_p, loglikes = go(dataset, 1e-5)
-    with open("llikes.csv", 'w') as f:
+    hmm, loglikes = train_model(dataset, 1e-5)
+    with open("Amos_T_loglikes_PS1.csv", 'w') as f:
         for line in loglikes:
             f.write(str(line) + "\n")
 
-    print "\nTRANSITION P\n", trans_p
-    print "\nMEASURE P\n", measure_p
-    print "\nSTART P\n", start_p
+    print "\nTRANSITION P\n", hmm.transition_p
+    print "\nMEASURE P\n", hmm.measure_p
+    print "\nSTART P\n", hmm.start_p
