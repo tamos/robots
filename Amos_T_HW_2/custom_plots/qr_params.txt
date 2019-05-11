@@ -1,0 +1,6 @@
+for i in range(1,100,10):
+    base_offset_q =  1.0/float(i)
+    base_offset_r =  1.0/float(i)
+
+self.R = array([[2.0, 0.0, 0.0],[0.0, 2.0, 0.0],[0.0, 0.0, (2.0 * math.pi)/180]]) * R_factor
+self.Q = array([[1.0, 0.0],[0.0, math.pi/180]]) * Q_factor

@@ -1,0 +1,2 @@
+self.R = array([[2.0, 0.0, 0.0],[0.0, 2.0, 0.0],[0.0, 0.0, radians(2)]])*QR_factor
+self.Q = array([[1.0, 0.0],[0.0, radians(1)]])*QR_factor
