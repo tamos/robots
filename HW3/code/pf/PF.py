@@ -36,6 +36,7 @@ class PF(object):
         self.laser = laser
         self.gridmap = gridmap
         self.visualize = visualize
+        self.ntries = 100
 
         # particles is a numParticles x 3 array, where each column denote a particle_handle
         # weights is a numParticles x 1 array of particle weights
@@ -147,8 +148,6 @@ class PF(object):
     #
     # Returns:
     #   (xs, ys, thetas):   Position and heading for sample
-    #   (u1, u2):           Control (velocity) inputs
-    #   deltat:             Time increment
     def sampleMotion (self, x, y, theta, u1, u2, deltat):
 
         # Your code goes here: Implement the algorithm given in Table 5.3
@@ -157,37 +156,54 @@ class PF(object):
         # Be sure to reject samples that are in collision
         # (see Gridmap.inCollision), and to unwrap orientation so that it
         # it is between -pi and pi.
+        
+        for _ in range(self.ntries):
 
-        theta = np.radians(theta)
+            theta = np.radians(theta)
 
-        abs_v = np.abs(u1) # v 
-        abs_omega = np.abs(u2) # omega
+            vt1 = np.random.normal(0, self.alpha1 * u1**2 + self.alpha2 * u2**2)
+            vt2 = np.random.normal(0, self.alpha3 * u1**2 + self.alpha4 * u2**2)
+            gammat = np.random.normal(0, self.alpha5 * u1**2 + self.alpha6 * u2**2)
 
-        # compute vhat
+            ubart1 = u1 + vt1
+            vbart2 = u2 + vt2
 
-        vhat = u1  + np.random.normal(0, self.alpha1 * abs_v + self.alpha2 * abs_omega)
+            xt  = x + ubart1/vbart2 * (np.sin(theta + vbart2 * deltat) - np.sin(theta))
+            yt = y + ubart1/vbart2 * (np.cos(theta) - np.cos(theta + vbart2 * deltat))
+            thetat = theta + vbart2 * deltat + gammat * deltat
 
-        # compute omegahat
 
-        omegahat = u2 + np.random.normal(0, self.alpha3 * abs_v + self.alpha4 * abs_omega)
+            abs_v = np.abs(u1) # v 
+            abs_omega = np.abs(u2) # omega
 
-        # compute gammahat
+            # compute vhat
 
-        gammahat  = np.random.normal(0, self.alpha5 * abs_v + self.alpha6 * abs_omega)
+            vhat = u1  + np.random.normal(0, self.alpha1 * abs_v + self.alpha2 * abs_omega)
 
-        # compute xprime
+            # compute omegahat
 
-        xprime = ( x - (vhat / omegahat) * np.sin(theta) + 
-                        (vhat / omegahat) * np.sin(theta + omegahat * deltat) )
+            omegahat = u2 + np.random.normal(0, self.alpha3 * abs_v + self.alpha4 * abs_omega)
 
-        # compute yprime
+            # compute xprime
 
-        yprime = ( y + (vhat / omegahat) * np.cos(theta) + 
-                        (vhat / omegahat) * np.cos(theta + omegahat * deltat) )
+            xprime = ( xt - (vhat / omegahat) * np.sin(theta) + 
+                            (vhat / omegahat) * np.sin(theta + omegahat * deltat) )
 
-        # compute thetaprime
+            # compute yprime
 
-        thetaprime  = theta + omegahat * deltat + gammahat * deltat
+            yprime = ( yt + (vhat / omegahat) * np.cos(theta) + 
+                            (vhat / omegahat) * np.cos(theta + omegahat * deltat) )
+
+            # compute gammahat
+
+            gammahat  = np.random.normal(0, self.alpha5 * abs_v + self.alpha6 * abs_omega)
+
+            # compute thetaprime
+
+            thetaprime  = theta + omegahat * deltat + gammahat * deltat
+
+            if not self.gridmap.inCollision(xprime, yprime):
+                break
 
         return np.array([xprime, yprime, np.degrees(thetaprime)]).T
 

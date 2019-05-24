@@ -1,6 +1,7 @@
 import numpy as np
 from Gridmap import Gridmap
 from scipy.stats import norm, expon
+from scipy.integrate import quad as integral
 
 class Laser(object):
     # Construct an Laser instance with the following set of variables,
@@ -38,26 +39,74 @@ class Laser(object):
     #   likelihood:     Scan likelihood
     def scanProbability (self, z, x, gridmap):
 
-        # Your code goes here
-        # Implement the algorithm given in Table 6.1
-        # You are provided with a vectorized implementation of ray tracing below
-        print('Please add code')
+        x,y,theta = *x
+
+        q = 1
+
+        XY = self.getXY(z, self.angles)
+
+        for k in range(len(z)):
+
+            # define zmax values, etc.
+            zmax = z[z == self.zMax].size[0] 
+            zhit = z[(z >= 0) & (z <= self.zMax)].size[0]
+            zshort = z[(z >= 0) & (z <= z_subt_kstar)].size[0]
+            zrand = z[(z >= 0) & (z < self.zmax)].size[0]
+
+            zarr = np.array([ zmax, zhit, zshort, zrand ])
+
+            # 6.12
+
+            zmax, zhit, zshort, zrand = zarr / zarr.sum()
 
 
+            # compute z_t ^kstar for z_t ^k with ray tracing
+
+            xr, yr = *XY[k]
+            thetar = theta
+
+            z_subt_kstar = self.rayTracing(xr, yr, thetar, 
+                                    self.angles[k], gridmap)
+
+            if z[k] <= self.zMax and z[k] >= 0: # 6.4 in prob robotics
+                n = norm(z_subt_kstar, self.sigmaHit**2)
+                phit = n.pdf(z[k])
+                phit *= (integral(n,0,self.zMax)) ** (-1.0)
+            else:
+                phit = 0.0
+
+            # 6.8 in prob robotics
+            if z[k] <= z_subt_kstar and z[k] >= 0:
+                pshort = self.lambdaShort * np.exp(-self.lambdaShort * z[k])
+                pshort *= 1/(1 - np.exp(-self.lambdaShort * z_subt_kstar))
+            else:
+                pshort = 0.0
+
+            # 6.11,10
+
+            if z[k] < z_subt_kstar and z[k] >= 0:
+                prand = 1.0/zmax
+            else:
+                prand = 0.0
+
+            # cumprod p with q
+
+            q *= zhit * phit + zshort * pshort + zmax * pmax + zrand * prand
 
 
+        return q
 
 
     # Function to convert range and bearing to (x,y) in LIDAR frame
-    #   range:   1xn array of range measurements
+    #   ranges:   1xn array of range measurements
     #   bearing: 1xn array of bearings
     #
     # Returns:
     #   XY:      2xn array, where each column is an (x,y) pair
-    def getXY (self, range, bearing):
+    def getXY (self, ranges, bearing):
 
         CosSin = np.vstack((np.cos(bearing[:]),np.sin(bearing[:])))
-        XY = np.tile(range,(2,1))*CosSin
+        XY = np.tile(ranges,(2,1))*CosSin
 
         return XY
 
