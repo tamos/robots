@@ -6,11 +6,12 @@ import matplotlib.pyplot as plt
 from Gridmap import Gridmap
 from Laser import Laser
 from Visualization import Visualization
-from collections import Queue
+from Queue import Queue
 
 #matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
+DIV_OFFSET = 1E-15
 
 def normprob(a,b): # after 5.2 in probabilistic robotics
     rv = 1/(np.sqrt(2 * np.pi * b**2))
@@ -36,7 +37,7 @@ class PF(object):
         self.laser = laser
         self.gridmap = gridmap
         self.visualize = visualize
-        self.ntries = 100
+        self.ntries = 5
 
         # particles is a numParticles x 3 array, where each column denote a particle_handle
         # weights is a numParticles x 1 array of particle weights
@@ -48,9 +49,6 @@ class PF(object):
             self.vis.drawGridmap(self.gridmap)
         else:
             self.vis = None
-
-
-
 
     # Samples the set of particles according to a uniform distribution
     # and sets the weigts to 1/numParticles. Particles in collision are rejected
@@ -156,14 +154,40 @@ class PF(object):
         # Be sure to reject samples that are in collision
         # (see Gridmap.inCollision), and to unwrap orientation so that it
         # it is between -pi and pi.
-        
-        for _ in range(self.ntries):
 
-            theta = np.radians(theta)
+        abs_v = np.abs(u1) # v 
+        abs_omega = np.abs(u2) # omega
 
-            vt1 = np.random.normal(0, self.alpha1 * u1**2 + self.alpha2 * u2**2)
-            vt2 = np.random.normal(0, self.alpha3 * u1**2 + self.alpha4 * u2**2)
-            gammat = np.random.normal(0, self.alpha5 * u1**2 + self.alpha6 * u2**2)
+        theta = np.radians(theta)
+
+
+        vt1_q = np.random.normal(0, self.alpha1 * u1**2 + self.alpha2 * u2**2,
+                         size = self.ntries)
+        vt2_q = np.random.normal(0, self.alpha3 * u1**2 + self.alpha4 * u2**2,
+                        size = self.ntries)
+        gammat_q = np.random.normal(0, self.alpha5 * u1**2 + self.alpha6 * u2**2,
+                    size = self.ntries)
+
+        vhat_q = np.random.normal(0, self.alpha1 * abs_v + self.alpha2 * abs_omega,
+                    size = self.ntries)
+
+        omegahat_q = np.random.normal(0, self.alpha3 * abs_v + self.alpha4 * abs_omega,
+                    size = self.ntries)
+
+        gammahat_q = np.random.normal(0, self.alpha5 * abs_v + self.alpha6 * abs_omega,
+                        size = self.ntries)
+
+        in_collision = True
+
+        for k in range(self.ntries): # attempt a given number of times to find noncollision
+
+            #vt1 = np.random.normal(0, self.alpha1 * u1**2 + self.alpha2 * u2**2)
+            #vt2 = np.random.normal(0, self.alpha3 * u1**2 + self.alpha4 * u2**2)
+            #gammat = np.random.normal(0, self.alpha5 * u1**2 + self.alpha6 * u2**2)
+
+            vt1 = vt1_q[k]
+            vt2 = vt2_q[k]
+            gammat = gammat_q[k]
 
             ubart1 = u1 + vt1
             vbart2 = u2 + vt2
@@ -172,17 +196,15 @@ class PF(object):
             yt = y + ubart1/vbart2 * (np.cos(theta) - np.cos(theta + vbart2 * deltat))
             thetat = theta + vbart2 * deltat + gammat * deltat
 
-
-            abs_v = np.abs(u1) # v 
-            abs_omega = np.abs(u2) # omega
-
             # compute vhat
 
-            vhat = u1  + np.random.normal(0, self.alpha1 * abs_v + self.alpha2 * abs_omega)
-
+            #vhat = u1  + np.random.normal(0, self.alpha1 * abs_v + self.alpha2 * abs_omega)
+            vhat = u1 + vhat_q[k]
             # compute omegahat
 
-            omegahat = u2 + np.random.normal(0, self.alpha3 * abs_v + self.alpha4 * abs_omega)
+            omegahat = u2 + omegahat_q[k]
+
+            #omegahat = u2 + np.random.normal(0, self.alpha3 * abs_v + self.alpha4 * abs_omega)
 
             # compute xprime
 
@@ -196,16 +218,22 @@ class PF(object):
 
             # compute gammahat
 
-            gammahat  = np.random.normal(0, self.alpha5 * abs_v + self.alpha6 * abs_omega)
+            #gammahat  = np.random.normal(0, self.alpha5 * abs_v + self.alpha6 * abs_omega)
+
+            gammahat = gammahat_q[k]
 
             # compute thetaprime
 
             thetaprime  = theta + omegahat * deltat + gammahat * deltat
 
             if not self.gridmap.inCollision(xprime, yprime):
+                in_collision = False
                 break
 
-        return np.array([xprime, yprime, np.degrees(thetaprime)]).T
+        if in_collision: # if still in collision, return the input values unchanged
+            return np.array([x, y, np.degrees(thetaprime)]).T
+        else:
+            return np.array([xprime, yprime, np.degrees(thetaprime)]).T
 
 
     @property
@@ -236,23 +264,38 @@ class PF(object):
     # Function that performs resampling with replacement
     def resample (self):
 
-        # Your code goes here
-        # The np.random.choice function may be useful
-
+        # resample self.numParticles particles according to weights
+        particle_keys = np.arange(self.particles.shape[1])
+        selected_particles = np.random.choice(a = particle_keys,  
+                                    size = self.numParticles, 
+                                    p = self.weights.ravel())
+        self.particles = self.particles[:,selected_particles]
 
     # Perform the prediction step
     def prediction(self, u, deltat):
+        u1, u2 = u
 
-        # Your code goes here
-        # This may simply be a call to sampleMotion
+        new_particles = np.zeros(self.particles.shape)
 
+        for k in range(self.numParticles):
+            part, wts = self.getParticle(k)
+            x,y,theta = part
+            new_particles[:,k] = self.sampleMotion(x, y, theta, u1, u2, deltat)
+
+        self.particles = new_particles
 
 
     # Perform the measurement update step
     #   Ranges:   Array of ranges (Laser.Angles provides bearings)
     def update(self, Ranges):
+        # reweight particles according to obs likelihood
 
-        # Your code goes here
+        for particle_k in range(self.numParticles):
+            # get scan likelihood based on estimated pose
+            particle_pose, particle_wt = self.getParticle(particle_k)
+            scan_likelihood = self.laser.scanProbability(Ranges, particle_pose, self.gridmap)
+            self.weights[:,particle_k] = particle_wt * scan_likelihood
+        self.weights = self.getNormalizedWeights()
 
 
     # Runs the particle filter algorithm
@@ -273,8 +316,9 @@ class PF(object):
         else:
             self.sampleParticlesUniform()
 
-        # Iterate over the data
+        # Iterate over the data, for each time step
         for k in range(U.shape[1]):
+            print "At time step ", k
             u = U[:,k]
             ranges = Ranges[:,k+1][0]
 
@@ -284,6 +328,12 @@ class PF(object):
                 else:
                     self.render (ranges, deltat, XGT[:,k])
 
-            # Your code goes here
-            
+            self.prediction(u, deltat)
+
+            self.update(ranges)
+
+            # only resample intermittently
+            if k % 4 == 3:
+                self.resample()
+
         plt.savefig(filename)

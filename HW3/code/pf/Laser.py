@@ -1,21 +1,23 @@
 import numpy as np
 from Gridmap import Gridmap
 from scipy.stats import norm, expon
-from scipy.integrate import quad as integral
+import scipy.integrate as integrate
+
+DIV_OFFSET = 1E-15
 
 class Laser(object):
     # Construct an Laser instance with the following set of variables,
     # which are described in Section 6.3.1 of Probabilistic Robotics
     #   numBeams:   Number of beams that comprise the scan
     def __init__(self, numBeams = 41, sparsity=1):
-        self.pHit = 0.97
-        self.pShort = 0.01
-        self.pMax = 0.01
-        self.pRand = 0.01
-        self.sigmaHit = 0.5
-        self.lambdaShort = 1
-        self.zMax = 20
-        self.zMaxEps = .1
+        self.pHit = 0.95;
+        self.pShort = 0.02;
+        self.pMax = 0.02;
+        self.pRand = 0.01;
+        self.sigmaHit = 0.05;
+        self.lambdaShort = 1;
+        self.zMax = 20;
+        self.zMaxEps = 0.02;
         self.Angles = np.linspace(-np.pi, np.pi, numBeams) # array of angles
         self.Angles = self.Angles[::sparsity]
 
@@ -39,62 +41,83 @@ class Laser(object):
     #   likelihood:     Scan likelihood
     def scanProbability (self, z, x, gridmap):
 
-        x,y,theta = *x
+        xr,yr,thetar = x
 
-        q = 1
+        # compute z_t ^kstar for z_t ^k with ray tracing
 
-        XY = self.getXY(z, self.angles)
+        z_subt_kstar, ignore = self.rayTracing(np.array([xr]), np.array([yr]), np.array([thetar]), 
+                                    self.Angles, gridmap)
+
+        # define zmax values, etc. per 6.4 - 6.11 in prob robotics
+        z = z.T
+
+        #zmax = z[z >= self.zMax].shape[0]
+        #zhit = z[(z >= 0) & (z <= self.zMax)].shape[0]
+        #zshort = z[(z >= 0) & (z <= z_subt_kstar)].shape[0]
+        #zrand = z[(z >= 0) & (z < self.zMax)].shape[0]
+
+        
+        z = z.ravel()
+        z_subt_kstar = z_subt_kstar.ravel()
+
+        #zarr = np.array([ zmax, zhit, zshort, zrand ])
+
+        # 6.12
+        #zmax, zhit, zshort, zrand = zarr / float(zarr.sum())
+
+
+        q = 1.0
+
 
         for k in range(len(z)):
-
-            # define zmax values, etc.
-            zmax = z[z == self.zMax].size[0] 
-            zhit = z[(z >= 0) & (z <= self.zMax)].size[0]
-            zshort = z[(z >= 0) & (z <= z_subt_kstar)].size[0]
-            zrand = z[(z >= 0) & (z < self.zmax)].size[0]
-
-            zarr = np.array([ zmax, zhit, zshort, zrand ])
-
-            # 6.12
-
-            zmax, zhit, zshort, zrand = zarr / zarr.sum()
-
-
-            # compute z_t ^kstar for z_t ^k with ray tracing
-
-            xr, yr = *XY[k]
-            thetar = theta
-
-            z_subt_kstar = self.rayTracing(xr, yr, thetar, 
-                                    self.angles[k], gridmap)
-
             if z[k] <= self.zMax and z[k] >= 0: # 6.4 in prob robotics
-                n = norm(z_subt_kstar, self.sigmaHit**2)
-                phit = n.pdf(z[k])
-                phit *= (integral(n,0,self.zMax)) ** (-1.0)
+
+                def normpdf(zk):
+                    rv = np.exp(-(1/2) * ( (zk - z_subt_kstar[k])**2 /(self.sigmaHit**2 + DIV_OFFSET)))
+                    phit = (1.0/(np.sqrt(2 * np.pi * self.sigmaHit**2) + DIV_OFFSET)) * rv
+                    return phit
+                #n = norm(loc = z_subt_kstar[k], scale = self.sigmaHit**2)
+                #print "This is n",n
+                #print "This is n eval at k", n.pdf(z[k])
+                #phit = n.pdf(z[k])
+                zHit = normpdf(z[k])
+                #phit *= 1.0/float(phit.sum())
+                #print "phit is ", phit
+                zHit *= (integrate.quad(normpdf,0.0,self.zMax)[0]) ** (-1.0)
             else:
-                phit = 0.0
+                zHit = 0.0
 
             # 6.8 in prob robotics
-            if z[k] <= z_subt_kstar and z[k] >= 0:
-                pshort = self.lambdaShort * np.exp(-self.lambdaShort * z[k])
-                pshort *= 1/(1 - np.exp(-self.lambdaShort * z_subt_kstar))
+            if z[k] <= z_subt_kstar[k] and z[k] >= 0:
+                zShort = self.lambdaShort * np.exp(-self.lambdaShort * z[k])
+                zShort = zShort / (1.0 - np.exp(-self.lambdaShort * z_subt_kstar[k]))
             else:
-                pshort = 0.0
+                zShort = 0.0
 
             # 6.11,10
 
-            if z[k] < z_subt_kstar and z[k] >= 0:
-                prand = 1.0/zmax
+            if z[k] < z_subt_kstar[k] and z[k] >= 0:
+                zRand = 1.0/float(self.zMax)
             else:
-                prand = 0.0
+                zRand = 0.0
 
-            # cumprod p with q
+            if z[k] >= self.zMax:
+                zMax = 1.0
+            else:
+                zMax = 0.0
 
-            q *= zhit * phit + zshort * pshort + zmax * pmax + zrand * prand
+            #q *= (zhit * phit) + (zshort * phit) + (zmax * pmax) + (zrand * phit)
+            q *= (zHit * self.pHit) + (zShort * self.pShort) + (zMax * self.pMax) + (zRand * self.pRand)
 
+        #parr = np.array([phit, pshort, pmax, prand])
 
-        return q
+        #phit, pshort, pmax, prand = parr / float(parr.sum())
+
+        #print parr / float(parr.sum())
+
+        #q = (zhit * self.pHit) + (zshort * self.pShort) + (zmax * self.pMax) + (zrand * self.pRand)
+
+        return np.array([q])
 
 
     # Function to convert range and bearing to (x,y) in LIDAR frame
