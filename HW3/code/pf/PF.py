@@ -306,12 +306,10 @@ class PF(object):
     #   X0:       Array indicating the initial pose (may be None)
     #   XGT:      Array of ground-truth poses (may be None)
     #   filename: Name of file for plot
-    def run(self, U, Ranges, deltat, X0, XGT, filename):
+    def run(self, U, Ranges, deltat, X0, XGT, filename, sampleGaussian, sigma):
 
         # Try different sampling strategies (including different values for sigma)
-        sampleGaussian = False
         if sampleGaussian and (X0 is not None):
-            sigma = 0.5
             self.sampleParticlesGaussian(X0[0,0], X0[1,0], sigma)
         else:
             self.sampleParticlesUniform()
@@ -333,7 +331,6 @@ class PF(object):
             self.update(ranges)
 
             # only resample intermittently
-            if k % 4 == 3:
-                self.resample()
+            self.resample()
 
         plt.savefig(filename)

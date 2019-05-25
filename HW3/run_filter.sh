@@ -13,7 +13,7 @@ do
 	for j in 1 40 80 150 250 300 500 700
 	do
 		echo $i $j
-		python code/pf/RunPF.py 'data/pf/'$i  $j
+		python code/pf/RunPF.py 'data/pf/'$i  $j 1
 	done
 	# ref https://stackoverflow.com/questions/25577210/grep-a-particular-content-before-a-period
 	newdir=$(echo $i | awk -F\. '{print $1}')
@@ -31,7 +31,7 @@ do
 	for j in 1 40 80 150 250 300 500 700
 	do
 		echo $i $j
-		python code/pf/RunPF.py 'data/pf/'$i  $j
+		python code/pf/RunPF.py 'data/pf/'$i  $j 0
 	done
 	# ref https://stackoverflow.com/questions/25577210/grep-a-particular-content-before-a-period
 	newdir=$(echo $i | awk -F\. '{print $1}')
