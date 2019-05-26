@@ -37,7 +37,7 @@ class PF(object):
         self.laser = laser
         self.gridmap = gridmap
         self.visualize = visualize
-        self.ntries = 5
+        self.ntries = 10
 
         # particles is a numParticles x 3 array, where each column denote a particle_handle
         # weights is a numParticles x 1 array of particle weights
@@ -161,20 +161,20 @@ class PF(object):
         theta = np.radians(theta)
 
 
-        vt1_q = iter(np.random.normal(0.0, self.alpha1 * u1**2 + self.alpha2 * u2**2,
+        vt1_q = iter(np.random.normal(0.0, np.sqrt(self.alpha1 * u1**2 + self.alpha2 * u2**2),
                          size = self.ntries))
-        vt2_q = iter(np.random.normal(0.0, self.alpha3 * u1**2 + self.alpha4 * u2**2,
+        vt2_q = iter(np.random.normal(0.0, np.sqrt(self.alpha3 * u1**2 + self.alpha4 * u2**2),
                         size = self.ntries))
-        gammat_q = iter(np.random.normal(0.0, self.alpha5 * u1**2 + self.alpha6 * u2**2,
+        gammat_q = iter(np.random.normal(0.0, np.sqrt(self.alpha5 * u1**2 + self.alpha6 * u2**2),
                     size = self.ntries))
 
-        vhat_q = iter(np.random.normal(0.0, self.alpha1 * abs_v + self.alpha2 * abs_omega,
+        vhat_q = iter(np.random.normal(0.0, np.sqrt(self.alpha1 * abs_v + self.alpha2 * abs_omega),
                     size = self.ntries))
 
-        omegahat_q = iter(np.random.normal(0.0, self.alpha3 * abs_v + self.alpha4 * abs_omega,
+        omegahat_q = iter(np.random.normal(0.0, np.sqrt(self.alpha3 * abs_v + self.alpha4 * abs_omega),
                     size = self.ntries))
 
-        gammahat_q = iter(np.random.normal(0.0, self.alpha5 * abs_v + self.alpha6 * abs_omega,
+        gammahat_q = iter(np.random.normal(0.0, np.sqrt(self.alpha5 * abs_v + self.alpha6 * abs_omega),
                         size = self.ntries))
 
         in_collision = True
@@ -260,11 +260,11 @@ class PF(object):
 
         # resample self.numParticles particles according to weights
         particle_keys = np.arange(self.particles.shape[1])
-        sample_size = int(self.numParticles * 0.9)
+        sample_size = int(self.numParticles * 0.95)
         selected_particles = np.random.choice(a = particle_keys,  
                                     size = sample_size, 
                                     p = self.weights.ravel())
-        # add in 10 % of particles at random to avoid particle depletion
+        # add in some particles at random to avoid particle depletion
         selected_particles = np.concatenate([selected_particles,
                             np.random.choice(a = particle_keys,  
                     size = self.numParticles - sample_size ) ] )
@@ -309,18 +309,18 @@ class PF(object):
 
         # Try different sampling strategies (including different values for sigma)
         if sampleGaussian and (X0 is not None):
-            sigma = 5.0
+            sigma = 0.9
             self.sampleParticlesGaussian(X0[0,0], X0[1,0], sigma)
         else:
             self.sampleParticlesUniform()
 
         # Iterate over the data, for each time step
         for k in range(U.shape[1]):
-            print "At time step ", k
+            #print "At time step ", k
             u = U[:,k]
             ranges = Ranges[:,k+1][0]
 
-            if self.visualize:
+            if self.visualize: # make sure visualize the last
                 if XGT is None:
                     self.render (ranges, deltat, None)
                 else:
@@ -330,8 +330,11 @@ class PF(object):
 
             self.update(ranges)
 
+            if staggeroreffective == 'every':
+                self.resample()
+
             if staggeroreffective == 'stagger':
-                if k % 10 == 9: # resample every 10 steps
+                if k % 5 == 4: # resample every few steps
                     self.resample()
 
             if staggeroreffective == 'effective':

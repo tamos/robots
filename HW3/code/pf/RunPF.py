@@ -30,7 +30,7 @@ if __name__ == '__main__':
     Ranges = Data['Ranges']
     XGT = Data['XGT']
     Alpha = Data['Alpha']
-    sparsity = 3
+    sparsity = 5
 
     numBearings = Ranges[0,0].shape[0]
     Ranges = np.array(Ranges.tolist())[:,:,::sparsity]
