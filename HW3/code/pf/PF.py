@@ -161,21 +161,21 @@ class PF(object):
         theta = np.radians(theta)
 
 
-        vt1_q = np.random.normal(0, self.alpha1 * u1**2 + self.alpha2 * u2**2,
-                         size = self.ntries)
-        vt2_q = np.random.normal(0, self.alpha3 * u1**2 + self.alpha4 * u2**2,
-                        size = self.ntries)
-        gammat_q = np.random.normal(0, self.alpha5 * u1**2 + self.alpha6 * u2**2,
-                    size = self.ntries)
+        vt1_q = iter(np.random.normal(0.0, self.alpha1 * u1**2 + self.alpha2 * u2**2,
+                         size = self.ntries))
+        vt2_q = iter(np.random.normal(0.0, self.alpha3 * u1**2 + self.alpha4 * u2**2,
+                        size = self.ntries))
+        gammat_q = iter(np.random.normal(0.0, self.alpha5 * u1**2 + self.alpha6 * u2**2,
+                    size = self.ntries))
 
-        vhat_q = np.random.normal(0, self.alpha1 * abs_v + self.alpha2 * abs_omega,
-                    size = self.ntries)
+        vhat_q = iter(np.random.normal(0.0, self.alpha1 * abs_v + self.alpha2 * abs_omega,
+                    size = self.ntries))
 
-        omegahat_q = np.random.normal(0, self.alpha3 * abs_v + self.alpha4 * abs_omega,
-                    size = self.ntries)
+        omegahat_q = iter(np.random.normal(0.0, self.alpha3 * abs_v + self.alpha4 * abs_omega,
+                    size = self.ntries))
 
-        gammahat_q = np.random.normal(0, self.alpha5 * abs_v + self.alpha6 * abs_omega,
-                        size = self.ntries)
+        gammahat_q = iter(np.random.normal(0.0, self.alpha5 * abs_v + self.alpha6 * abs_omega,
+                        size = self.ntries))
 
         in_collision = True
 
@@ -185,9 +185,9 @@ class PF(object):
             #vt2 = np.random.normal(0, self.alpha3 * u1**2 + self.alpha4 * u2**2)
             #gammat = np.random.normal(0, self.alpha5 * u1**2 + self.alpha6 * u2**2)
 
-            vt1 = vt1_q[k]
-            vt2 = vt2_q[k]
-            gammat = gammat_q[k]
+            vt1 = next(vt1_q)
+            vt2 = next(vt2_q)
+            gammat = next(gammat_q)
 
             ubart1 = u1 + vt1
             vbart2 = u2 + vt2
@@ -199,10 +199,10 @@ class PF(object):
             # compute vhat
 
             #vhat = u1  + np.random.normal(0, self.alpha1 * abs_v + self.alpha2 * abs_omega)
-            vhat = u1 + vhat_q[k]
+            vhat = u1 + next(vhat_q)
             # compute omegahat
 
-            omegahat = u2 + omegahat_q[k]
+            omegahat = u2 + next(omegahat_q)
 
             #omegahat = u2 + np.random.normal(0, self.alpha3 * abs_v + self.alpha4 * abs_omega)
 
@@ -216,22 +216,16 @@ class PF(object):
             yprime = ( yt + (vhat / omegahat) * np.cos(theta) + 
                             (vhat / omegahat) * np.cos(theta + omegahat * deltat) )
 
-            # compute gammahat
+            # compute gammahat and thetaprime
 
-            #gammahat  = np.random.normal(0, self.alpha5 * abs_v + self.alpha6 * abs_omega)
-
-            gammahat = gammahat_q[k]
-
-            # compute thetaprime
-
-            thetaprime  = theta + omegahat * deltat + gammahat * deltat
+            thetaprime  = theta + (omegahat * deltat) + (next(gammahat_q) * deltat)
 
             if not self.gridmap.inCollision(xprime, yprime):
                 in_collision = False
                 break
 
-        if in_collision: # if still in collision, return the input values unchanged
-            return np.array([x, y, np.degrees(thetaprime)]).T
+        if in_collision: # if still in collision, turn around
+            return np.array([x, y, np.degrees(thetaprime) + 180 % 360]).T
         else:
             return np.array([xprime, yprime, np.degrees(thetaprime)]).T
 
@@ -266,36 +260,41 @@ class PF(object):
 
         # resample self.numParticles particles according to weights
         particle_keys = np.arange(self.particles.shape[1])
+        sample_size = int(self.numParticles * 0.9)
         selected_particles = np.random.choice(a = particle_keys,  
-                                    size = self.numParticles, 
+                                    size = sample_size, 
                                     p = self.weights.ravel())
+        # add in 10 % of particles at random to avoid particle depletion
+        selected_particles = np.concatenate([selected_particles,
+                            np.random.choice(a = particle_keys,  
+                    size = self.numParticles - sample_size ) ] )
         self.particles = self.particles[:,selected_particles]
-
+        
     # Perform the prediction step
     def prediction(self, u, deltat):
         u1, u2 = u
-
         new_particles = np.zeros(self.particles.shape)
-
         for k in range(self.numParticles):
             part, wts = self.getParticle(k)
             x,y,theta = part
             new_particles[:,k] = self.sampleMotion(x, y, theta, u1, u2, deltat)
-
         self.particles = new_particles
-
 
     # Perform the measurement update step
     #   Ranges:   Array of ranges (Laser.Angles provides bearings)
     def update(self, Ranges):
         # reweight particles according to obs likelihood
-
+        self.weights = self.getNormalizedWeights()
         for particle_k in range(self.numParticles):
             # get scan likelihood based on estimated pose
             particle_pose, particle_wt = self.getParticle(particle_k)
             scan_likelihood = self.laser.scanProbability(Ranges, particle_pose, self.gridmap)
             self.weights[:,particle_k] = particle_wt * scan_likelihood
         self.weights = self.getNormalizedWeights()
+
+    @property
+    def effective_particles(self):
+        return 1.0 / (self.weights**2).sum() # per slides
 
 
     # Runs the particle filter algorithm
@@ -306,11 +305,11 @@ class PF(object):
     #   X0:       Array indicating the initial pose (may be None)
     #   XGT:      Array of ground-truth poses (may be None)
     #   filename: Name of file for plot
-    def run(self, U, Ranges, deltat, X0, XGT, filename, sampleGaussian):
+    def run(self, U, Ranges, deltat, X0, XGT, filename, sampleGaussian, staggeroreffective):
 
         # Try different sampling strategies (including different values for sigma)
         if sampleGaussian and (X0 is not None):
-            sigma = 0.3
+            sigma = 5.0
             self.sampleParticlesGaussian(X0[0,0], X0[1,0], sigma)
         else:
             self.sampleParticlesUniform()
@@ -331,7 +330,12 @@ class PF(object):
 
             self.update(ranges)
 
-            # only resample intermittently
-            self.resample()
+            if staggeroreffective == 'stagger':
+                if k % 10 == 9: # resample every 10 steps
+                    self.resample()
+
+            if staggeroreffective == 'effective':
+                if self.effective_particles > (2.0 * self.numParticles)/3.0:
+                    self.resample()
 
         plt.savefig(filename)

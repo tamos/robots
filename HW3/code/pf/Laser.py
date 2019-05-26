@@ -47,50 +47,29 @@ class Laser(object):
 
         z_subt_kstar, ignore = self.rayTracing(np.array([xr]), np.array([yr]), np.array([thetar]), 
                                     self.Angles, gridmap)
-
-        # define zmax values, etc. per 6.4 - 6.11 in prob robotics
         z = z.T
-
-        #zmax = z[z >= self.zMax].shape[0]
-        #zhit = z[(z >= 0) & (z <= self.zMax)].shape[0]
-        #zshort = z[(z >= 0) & (z <= z_subt_kstar)].shape[0]
-        #zrand = z[(z >= 0) & (z < self.zMax)].shape[0]
-
-        
         z = z.ravel()
         z_subt_kstar = z_subt_kstar.ravel()
 
-        #zarr = np.array([ zmax, zhit, zshort, zrand ])
-
-        # 6.12
-        #zmax, zhit, zshort, zrand = zarr / float(zarr.sum())
-
-
         q = 1.0
 
-
         for k in range(len(z)):
+            # define zmax values, etc. per 6.4 - 6.11 in prob robotics
             if z[k] <= self.zMax and z[k] >= 0: # 6.4 in prob robotics
 
                 def normpdf(zk):
-                    rv = np.exp(-(1/2) * ( (zk - z_subt_kstar[k])**2 /(self.sigmaHit**2 + DIV_OFFSET)))
-                    phit = (1.0/(np.sqrt(2 * np.pi * self.sigmaHit**2) + DIV_OFFSET)) * rv
+                    rv = np.exp(-(1/2) * ( (zk - z_subt_kstar[k])**2 /(self.sigmaHit**2)))
+                    phit = (1.0/(np.sqrt(2 * np.pi * self.sigmaHit**2))) * rv
                     return phit
-                #n = norm(loc = z_subt_kstar[k], scale = self.sigmaHit**2)
-                #print "This is n",n
-                #print "This is n eval at k", n.pdf(z[k])
-                #phit = n.pdf(z[k])
                 zHit = normpdf(z[k])
-                #phit *= 1.0/float(phit.sum())
-                #print "phit is ", phit
-                zHit *= (integrate.quad(normpdf,0.0,self.zMax)[0]) ** (-1.0)
+                zHit /= (integrate.quad(normpdf,0.0,self.zMax)[0]) 
             else:
                 zHit = 0.0
 
             # 6.8 in prob robotics
             if z[k] <= z_subt_kstar[k] and z[k] >= 0:
                 zShort = self.lambdaShort * np.exp(-self.lambdaShort * z[k])
-                zShort = zShort / (1.0 - np.exp(-self.lambdaShort * z_subt_kstar[k]))
+                zShort /= (1.0 - np.exp(-self.lambdaShort * z_subt_kstar[k]))
             else:
                 zShort = 0.0
 
@@ -106,16 +85,13 @@ class Laser(object):
             else:
                 zMax = 0.0
 
-            #q *= (zhit * phit) + (zshort * phit) + (zmax * pmax) + (zrand * phit)
-            q *= (zHit * self.pHit) + (zShort * self.pShort) + (zMax * self.pMax) + (zRand * self.pRand)
+            #zarr = np.array([ zMax, zHit, zShort, zRand ])
 
-        #parr = np.array([phit, pshort, pmax, prand])
+            # 6.12
+            #zMax, zHit, zShort, zRand = zarr / float(zarr.sum())
 
-        #phit, pshort, pmax, prand = parr / float(parr.sum())
-
-        #print parr / float(parr.sum())
-
-        #q = (zhit * self.pHit) + (zshort * self.pShort) + (zmax * self.pMax) + (zrand * self.pRand)
+            q *= ((zHit * self.pHit) + (zShort * self.pShort)
+                     + (zMax * self.pMax) + (zRand * self.pRand) )
 
         return np.array([q])
 

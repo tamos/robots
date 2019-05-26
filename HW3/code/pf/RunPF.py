@@ -13,7 +13,7 @@ if __name__ == '__main__':
     # This function should be called with two arguments:
     #    sys.argv[1]: Pickle file defining problem setup
     #    sys.argv[2]: Number of particles (default=100)
-    if (len(sys.argv) == 3):
+    if (len(sys.argv) > 2):
         numParticles = int(sys.argv[2])
     elif (len(sys.argv) == 2):
         numParticles = 100
@@ -30,7 +30,7 @@ if __name__ == '__main__':
     Ranges = Data['Ranges']
     XGT = Data['XGT']
     Alpha = Data['Alpha']
-    sparsity = 5
+    sparsity = 3
 
     numBearings = Ranges[0,0].shape[0]
     Ranges = np.array(Ranges.tolist())[:,:,::sparsity]
@@ -44,6 +44,6 @@ if __name__ == '__main__':
     # Instantiate the PF class
     pf = PF(numParticles, Alpha, laser, gridmap, True)
 
-    filename = os.path.basename(sys.argv[1]).split('.')[0] + '_Pn' + str(numParticles)
-    pf.run(U, Ranges, deltat, X0, XGT, filename, True, sigma)
+    filename = os.path.basename(sys.argv[1]).split('.')[0] + '_Pn' + str(numParticles) + '_gauss'
+    pf.run(U, Ranges, deltat, X0, XGT, filename, True, sys.argv[3])
 
