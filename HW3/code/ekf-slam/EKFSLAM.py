@@ -51,18 +51,18 @@ class EKFSLAM(object):
     # Perform the prediction step to determine the mean and covariance
     # of the posterior belief given the current estimate for the mean
     # and covariance, the control data, and the process model
-    #    u:                 The forward distance and change in heading
+    #    u: The forward distance and change in heading
     def prediction(self, u):
-
-        # Your code goes here
-        #print "Please add code"
-        u1 = u[0]
-        u2 = u[1]
+        u1, u2 = u
 
         self.mu[0] = self.mu[0] + u1*np.cos(self.mu[2])
         self.mu[1] = self.mu[1] + u1*np.sin(self.mu[2])
         self.mu[2] = self.mu[2] + u2
 
+
+        sigma_new = np.matmul(jacob, self.Sigma)
+        sigma_new = np.matmul(sigma_new, jacob.T)
+        self.Sigma = sigma_new + self.R
 
 
     # Perform the measurement update step to compute the posterior
@@ -71,9 +71,10 @@ class EKFSLAM(object):
     #    z:     The (x,y) position of the landmark relative to the robot
     #    i:     The ID of the observed landmark
     def update(self, z, i):
-
-        # Your code goes here
-        print "Please add code"
+        # define h
+        jacob = np.array([[-1, -np.cos(self.mu[2]), -sin(self.mu[2])],
+                        [-1, np.sin(self.mu[2]), -np.cos(self.mu[2])]])
+        K = np.matmul(self.Sigma, )
 
 
     # Augment the state vector to include the new landmark

@@ -9,7 +9,7 @@ mkdir 'initial_position_known'
 
 for i in $(ls data/pf | grep 'pickle' | grep -v 'simple_world_path2' | grep -v 'rooms_world_path2')
 do
-	for j in 587
+	for j in 601 701 801
 	do
 		echo $i $j
 		python code/pf/RunPF.py 'data/pf/'$i  $j 'effective'
@@ -27,7 +27,7 @@ mkdir 'initial_position_unknown'
 
 for i in $(ls data/pf | grep 'pickle' | grep 'path2')
 do
-	for j in 587
+	for j in 601 701 801
 	do
 		echo $i $j
 		python code/pf/RunPF.py 'data/pf/'$i  $j 'effective'
