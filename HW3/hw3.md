@@ -25,22 +25,31 @@ With respect to the 'kidnapped' robot problem specifically, I found I was able t
 
 # Q4 a
 
-First we multiply out the expression to obtain:
+Let's rewrite the equation as:
 
 \begin{equation}
 \begin{aligned}
-z_{t,x} &= cos(\theta_t)(x_m) - cos(\theta_t)(x_t) + sin(\theta_t)(y_m) - sin(\theta_t)(y_t) + w_{t,x} \\
-z_{t,y} &= -sin(\theta_t)(x_m) + sin(\theta_t)(x_t) + cos(\theta_t)(y_m) - cos(\theta_t)(y_t) + w_{t,y}  \\
+z &= c [x_m - x_t] + w \\
 \end{aligned}
 \end{equation}
 
-Next we rearrange the expression to obtain:
-
+Where $z,x_m,x_t,w$ are vectors and $c$ is a matrix. Now split $[x_m - x_t]$ into two vectors and multiply by the inverse of $c$, assuming it exists:
 
 \begin{equation}
 \begin{aligned}
--cos(\theta_t)(x_m) - sin(\theta_t)(y_m)  &= - z_{t,x} - cos(\theta_t)(x_t) - sin(\theta_t)(y_t) + w_{t,x} \\
-sin(\theta_t)(x_m) - cos(\theta_t)(y_m) &= - z_{t,y} + sin(\theta_t)(x_t) - cos(\theta_t)(y_t) + w_{t,y}  \\
+c^{-1} z &= c^{-1} c x_m - x_t + w \\
+c^{-1} z + x_t - w &= x_m \\
+\end{aligned}
+\end{equation}
+
+Which can be written out and the jacobian solved as:
+
+\begin{equation}
+\begin{aligned}
+\begin{bmatrix}
+cos(\theta_t) z_{t,x} - sin(\theta_t) z_{t,y} - x_{t,x} + w \\
+sin(\theta_t) z_{t,x} - cos(\theta_t)z_{t,y} - x_{t,y} + w 
+\end{bmatrix} &= \begin{bmatrix} x_{m,x}  \\ x_{m,y} \end{bmatrix}
 \end{aligned}
 \end{equation}
 
@@ -48,18 +57,19 @@ Solving for the jacobian we obtain:
 
 \begin{equation}
 \begin{aligned}
- J_{f(z,x,y)} &= \begin{bmatrix}
-  -1 & -cos(\theta_t) & -sin(\theta_t) \\
- -1 & sin(\theta_t) & -cos(\theta_t) \\
+J_{f(x,y,\theta,z_x,z_y)} &= \begin{bmatrix}
+-1 & 0 & -z_y cos(\theta)-z_x sin(\theta) & cos(\theta) & -sin(\theta) \\ 
+0 & -1 & -z_y sin(\theta) + z_x cos(\theta) & sin(\theta) & -cos(\theta) 
 \end{bmatrix}
 \end{aligned}
 \end{equation}
 
-We just have to remember to transform the left side after calculation. 
+This will be $H$ in the model formulation.
 
 
 # Q4 b
 
+See attached files.
 
 
 

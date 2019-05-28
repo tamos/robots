@@ -115,7 +115,7 @@ class Visualization(object):
         el = el.dot(circle)
         el = v.dot(el)
 
-        XY = xc + el
+        XY = xc+ el
 
         return XY
 
