@@ -337,6 +337,9 @@ class GridWorldMDP(object):
 
             ax.text((i+0.4)*size, (j+0.45)*size, v)
 
+            if k in self.absorbing_states:
+                continue
+
             if Pi[k] == 0:
                 ax.arrow ((i+0.5)*size, (j+0.6)*size, 0.0, 0.3*size, head_width=0.1*size, head_length=0.1*size, fc='k', ec='k')
 
@@ -391,4 +394,5 @@ class GridWorldMDP(object):
             else:
                 print "Change is ", delta_val
             V = V_new
+            Pi = Pi_new
         return (V,Pi,n)
