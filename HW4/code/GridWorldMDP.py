@@ -385,7 +385,7 @@ class GridWorldMDP(object):
             V_new = bell_update.max(axis = 1)
             Pi_new =  np.argmax(bell_update, axis = 1)
             n += 1
-            delta_val = abs(V - V_new).sum()
+            delta_val = np.linalg.norm(V - V_new)
             if delta_val <= epsilon:
                 no_convergence = False
             else:
