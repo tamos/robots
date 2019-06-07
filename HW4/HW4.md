@@ -13,17 +13,15 @@
 
 # 1b
 
-
+Assuming policies do not vary with time, the number of possible policies is therefore the set of all possible actions $a \in A$ in all possible states $s \in S$. The size of this set is therefore the size of $A, n_A$ times the size of $S, n_S$, and the set of possible policies can be represented as an $n_A \times n_S$ matrix.
 
 # 1c
 
-
-
+Consider the requirements for demonstrating convergence via policy iteration. First, we must show the algorithm accounts for information about the current state's value which it does through the $V^{\pi \prime}$ term. Second, we must show the algorithm incorporates information about the impact of future actions. This is done through the $Q$ function, which is the expected rewards of future states given the current policy, weighted by the likelihood of the future state given the current state and policy. By acting greedily over the $Q$ function, the algorithm is able to approach the optimal policy because the $Q$ function encodes information about the potential future action. Third, we must show the algorithm will consider all possible policies in its exploration. This is guaranteed by the fact that the algorithm considers all possible actions in the policy improvement step by summing over $a \in A$, where $A$ is the set of all possible actions for the agent to take.
 
 # 2a
 
 ![Optimal Value Function and Policy for 2a](2_a.png)
-
 
 # 2b
 
@@ -64,9 +62,17 @@ Since $\epsilon$ is the reward, or rather the improvement in the reward, it must
 
 $$ \frac{a}{1-r} = \frac{2\epsilon \gamma }{1 - \gamma} $$
 
+\newpage
 
 # 3
 
+For batch TD(0), we can consider the episodes as a Markov process, and from there back out the value function. Since 6 out of 8 times we are in state $y$ we receive a reward of 1, we can say the value of state $y$ is 0.75. Every time we are in state $x$, which is just once, we receive no reward, but we do transition to state $y$, which has a value of 0.75.  
+
+If we were to take a Monte Carlo approach, we might note that when we are in state $x$ we never receive any reward. So the expected reward from $x$ is 0.
+
+While the MC method would produce the lowest mean squared error, it would not generalize as well as the TD method (SB pp 127-129). This is because the TD method would allow us to approximate the true underlying process as a Markov model with the maximum likelihood estimation of the parameters. SB (pp 129) notes that by assuming the maximum likelihood estimate of the model parameters is close enough to the true parameters, we are able to identify the "true" value function. TD also has the advantage of being much more efficient to compute than MC methods.
+
+\newpage
 
 # 4a
 
