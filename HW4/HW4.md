@@ -8,8 +8,7 @@
 
 # 1a
 
-
-
+I didn't get to this question.
 
 # 1b
 
@@ -19,9 +18,13 @@ Assuming policies do not vary with time, the number of possible policies is ther
 
 Consider the requirements for demonstrating convergence via policy iteration. First, we must show the algorithm accounts for information about the current state's value which it does through the $V^{\pi \prime}$ term. Second, we must show the algorithm incorporates information about the impact of future actions. This is done through the $Q$ function, which is the expected rewards of future states given the current policy, weighted by the likelihood of the future state given the current state and policy. By acting greedily over the $Q$ function, the algorithm is able to approach the optimal policy because the $Q$ function encodes information about the potential future action. Third, we must show the algorithm will consider all possible policies in its exploration. This is guaranteed by the fact that the algorithm considers all possible actions in the policy improvement step by summing over $a \in A$, where $A$ is the set of all possible actions for the agent to take.
 
+\newpage
+
 # 2a
 
 ![Optimal Value Function and Policy for 2a](2_a.png)
+
+\newpage
 
 # 2b
 
@@ -29,7 +32,7 @@ Consider the requirements for demonstrating convergence via policy iteration. Fi
 
 ![Optimal Value Function and Policy for 2b,ii](2_b_ii.png)
 
-These two policies differ in their discounting factor. The first (i) is highly myopic, while the second (ii) is very farsighted. This means under the first policy, the agent will prioritize short-term rewards. This leads to, for example, the cautious policy in the second row from the bottom. In all of these cells, the agent pursues the policy of moving upwards. By always going upward only, the agent avoids catastrophic outcomes in the bottom row.
+These two policies differ in their discounting factor. The first (i) is highly myopic, while the second (ii) is very farsighted. This means under the first policy, the agent will prioritize short-term rewards. This leads to, for example, the cautious policy in the second row from the bottom. In all of these cells, the agent pursues the policy of moving upwards. By always going upward, the agent avoids catastrophic outcomes in the bottom row.
 
 By contrast, in the second policy the agent engages in more 'risk-taking' behaviour by moving left and right (east/west) in the second row. This runs the risk of entering the cliff in the bottom row. However, if the agent does not end up going off the cliff, the potential rewards are greater.
 
